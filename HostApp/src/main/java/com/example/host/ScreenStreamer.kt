@@ -3,7 +3,7 @@ package com.example.host
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.ImageFormat
+import android.graphics.PixelFormat   // ← add this
 import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
@@ -52,7 +52,8 @@ class ScreenStreamer(
         val height = metrics.heightPixels
         val density = metrics.densityDpi
 
-        imageReader = ImageReader.newInstance(width, height, ImageFormat.RGBA_8888, 2)
+        // FIX #1: Use PixelFormat.RGBA_8888
+        imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
         projection!!.createVirtualDisplay(
             "cap",
             width, height, density,
@@ -68,39 +69,39 @@ class ScreenStreamer(
             try {
                 val dos = DataOutputStream(frameSocket.getOutputStream())
                 while (!frameSocket.isClosed) {
-                    // --- FIX #1: avoid 'continue' inside a lambda ---
                     val img = imageReader?.acquireLatestImage()
+
+                    // FIX #2: avoid 'continue' in lambda
                     if (img == null) {
                         Thread.sleep(8)
-                        continue
+                    } else {
+                        val plane = img.planes[0]
+                        val buffer: ByteBuffer = plane.buffer
+                        val rowStride = plane.rowStride
+                        val w = img.width
+                        val h = img.height
+
+                        val tight = ByteArray(w * h * 4)
+                        val arr = ByteArray(buffer.remaining())
+                        buffer.get(arr)
+                        var dstPos = 0
+                        for (y in 0 until h) {
+                            val srcPos = y * rowStride
+                            System.arraycopy(arr, srcPos, tight, dstPos, w * 4)
+                            dstPos += w * 4
+                        }
+
+                        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                        bmp.copyPixelsFromBuffer(ByteBuffer.wrap(tight))
+
+                        val baos = ByteArrayOutputStream()
+                        bmp.compress(Bitmap.CompressFormat.JPEG, 60, baos)
+                        val bytes = baos.toByteArray()
+                        dos.writeInt(bytes.size)
+                        dos.write(bytes)
+                        dos.flush()
+                        img.close()
                     }
-
-                    val plane = img.planes[0]
-                    val buffer: ByteBuffer = plane.buffer
-                    val rowStride = plane.rowStride
-                    val w = img.width
-                    val h = img.height
-
-                    val tight = ByteArray(w * h * 4)
-                    val arr = ByteArray(buffer.remaining())
-                    buffer.get(arr)
-                    var dstPos = 0
-                    for (y in 0 until h) {
-                        val srcPos = y * rowStride
-                        System.arraycopy(arr, srcPos, tight, dstPos, w * 4)
-                        dstPos += w * 4
-                    }
-
-                    val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-                    bmp.copyPixelsFromBuffer(ByteBuffer.wrap(tight))
-
-                    val baos = ByteArrayOutputStream()
-                    bmp.compress(Bitmap.CompressFormat.JPEG, 60, baos)
-                    val bytes = baos.toByteArray()
-                    dos.writeInt(bytes.size)
-                    dos.write(bytes)
-                    dos.flush()
-                    img.close()
                 }
             } catch (t: Throwable) { onError(t) }
         }
@@ -108,7 +109,7 @@ class ScreenStreamer(
 
     private fun inputLoop(sock: Socket) {
         sock.getInputStream().bufferedReader().use { br ->
-            // --- FIX #2: fully-qualified reference to the service singleton ---
+            // FIX #3: fully-qualified reference to the service singleton
             val injector = com.example.host.input.InjectorAccessibilityService.controller
             if (injector == null) return@use
             while (true) {
