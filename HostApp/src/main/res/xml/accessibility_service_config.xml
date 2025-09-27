@@ -1,0 +1,9 @@
+<accessibility-service
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeAllMask"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:canPerformGestures="true"
+    android:canRequestTouchExplorationMode="true"
+    android:notificationTimeout="0"
+    android:description="@string/app_name"
+    android:accessibilityFlags="flagDefault"/>
