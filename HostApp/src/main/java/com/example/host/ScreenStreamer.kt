@@ -3,19 +3,19 @@ package com.example.host
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.PixelFormat            // ← needed for RGBA_8888
+import android.graphics.ImageFormat           // ✅ add this
 import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.util.DisplayMetrics
 import android.view.WindowManager
-import com.example.host.input.InjectorAccessibilityService   // ← import the service
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.net.ServerSocket
 import java.net.Socket
 import java.nio.ByteBuffer
 import java.util.concurrent.Executors
+import com.example.host.input.InjectorAccessibilityService   // ✅ add this
 
 class ScreenStreamer(
     private val appContext: Context,
@@ -53,8 +53,8 @@ class ScreenStreamer(
         val height = metrics.heightPixels
         val density = metrics.densityDpi
 
-        // Use PixelFormat.RGBA_8888 (not ImageFormat.RGBA_8888)
-        imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
+        // ✅ Use ImageFormat.FLEX_RGBA_8888 (works everywhere), not RGBA_8888
+        imageReader = ImageReader.newInstance(width, height, ImageFormat.FLEX_RGBA_8888, 2)
         projection!!.createVirtualDisplay(
             "cap",
             width, height, density,
@@ -72,7 +72,7 @@ class ScreenStreamer(
                 while (!frameSocket.isClosed) {
                     val img = imageReader?.acquireLatestImage()
 
-                    // No 'continue' inside the lambda; just branch
+                    // ✅ No 'continue' in a lambda
                     if (img == null) {
                         Thread.sleep(8)
                     } else {
@@ -110,7 +110,8 @@ class ScreenStreamer(
 
     private fun inputLoop(sock: Socket) {
         sock.getInputStream().bufferedReader().use { br ->
-            val injector = InjectorAccessibilityService.controller   // resolved via import
+            // ✅ Use the imported class — no unresolved 'input'
+            val injector = InjectorAccessibilityService.controller
             if (injector == null) return@use
             while (true) {
                 val line = br.readLine() ?: break
