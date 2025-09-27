@@ -68,9 +68,13 @@ class ScreenStreamer(
             try {
                 val dos = DataOutputStream(frameSocket.getOutputStream())
                 while (!frameSocket.isClosed) {
-                    val img = imageReader?.acquireLatestImage() ?: run {
-                        Thread.sleep(8); continue
+                    // --- FIX #1: avoid 'continue' inside a lambda ---
+                    val img = imageReader?.acquireLatestImage()
+                    if (img == null) {
+                        Thread.sleep(8)
+                        continue
                     }
+
                     val plane = img.planes[0]
                     val buffer: ByteBuffer = plane.buffer
                     val rowStride = plane.rowStride
@@ -104,7 +108,8 @@ class ScreenStreamer(
 
     private fun inputLoop(sock: Socket) {
         sock.getInputStream().bufferedReader().use { br ->
-            val injector = input.InjectorAccessibilityService.controller
+            // --- FIX #2: fully-qualified reference to the service singleton ---
+            val injector = com.example.host.input.InjectorAccessibilityService.controller
             if (injector == null) return@use
             while (true) {
                 val line = br.readLine() ?: break
