@@ -1,8 +1,8 @@
 name: Android APK
 on:
   push:
-    tags: ['v*']
-  workflow_dispatch:
+    tags: ['v*']   # build when you push a tag like v1.0.0
+  workflow_dispatch:  # lets you click "Run workflow" in Actions
 
 jobs:
   build:
@@ -30,7 +30,7 @@ jobs:
             HostApp/build/outputs/apk/debug/*.apk
             ClientApp/build/outputs/apk/debug/*.apk
 
-      # ---- Signed release build (optional) ----
+      # ---- Signed release (optional) ----
       # - name: Decode keystore
       #   env:
       #     KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -42,7 +42,12 @@ jobs:
       #     KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
       #     KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
       #   run: |
-      #     ./gradlew       #       -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/keystore.jks       #       -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD       #       -Pandroid.injected.signing.key.alias=$KEY_ALIAS       #       -Pandroid.injected.signing.key.password=$KEY_PASSWORD       #       HostApp:assembleRelease ClientApp:assembleRelease
+      #     ./gradlew \
+      #       -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/keystore.jks \
+      #       -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
+      #       -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
+      #       -Pandroid.injected.signing.key.password=$KEY_PASSWORD \
+      #       HostApp:assembleRelease ClientApp:assembleRelease
       #
       # - name: Upload release APKs
       #   uses: actions/upload-artifact@v4
