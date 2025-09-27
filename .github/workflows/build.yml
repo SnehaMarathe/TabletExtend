@@ -16,16 +16,25 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
+      - name: Install Android SDK (API 34 + Build-Tools 34.0.0)
         uses: android-actions/setup-android@v3
-
-      # Use Gradle without needing ./gradlew in the repo
-      - name: Build Host & Client debug APKs
-        uses: gradle/gradle-build-action@v3
         with:
-          gradle-version: 8.7
-          arguments: |
-            HostApp:assembleDebug
+          api-level: 34
+          build-tools: 34.0.0
+
+      # Install Gradle 8.7 (AGP 8.5.2 needs Gradle 8.7)
+      - name: Install Gradle 8.7
+        run: |
+          curl -s "https://get.sdkman.io" | bash
+          source "$HOME/.sdkman/bin/sdkman-init.sh"
+          sdk install gradle 8.7
+          echo "$HOME/.sdkman/candidates/gradle/current/bin" >> $GITHUB_PATH
+          gradle --version
+
+      - name: Build debug APKs (Host & Client)
+        run: |
+          gradle --no-daemon --stacktrace \
+            HostApp:assembleDebug \
             ClientApp:assembleDebug
 
       - name: Upload debug APKs
